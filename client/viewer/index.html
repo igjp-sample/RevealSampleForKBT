@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" style="background: #eee;">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reveal Sdk - Web Component</title>
+
+</head>
+
+<body>
+    <div style="margin: 1em;display: flex;justify-content: space-between;align-items: center;"><h1 style="margin: 0.1em 0;">ユーザー用表示画面</h1><span>ユーザー：<b id="userId"></b></span></div>
+    <div id="revealView" style="height: 920px; width: 100%;"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" ></script>
+
+    <script src="https://unpkg.com/dayjs@1.8.21/dayjs.min.js" ></script>
+    <script src="https://dl.revealbi.io/reveal/libs/1.6.0/infragistics.reveal.js"></script>
+
+    <script type="text/javascript">
+
+        if (localStorage.getItem("Country") !== "") {
+            document.getElementById("userId").innerHTML = localStorage.getItem("Country");
+        }
+
+        var revealView = new $.ig.RevealView("#revealView");
+
+        revealView.canEdit = false;
+        revealView.canSaveAs = false;
+
+        //set this to your server url
+        $.ig.RevealSdkSettings.setBaseUrl("http://localhost:5111/");
+
+        $.ig.RevealSdkSettings.setAdditionalHeadersProvider((url) => {
+            const user = localStorage.getItem("Country");
+            if (user === "") return;
+            return ({ "x-reveal-user": user });
+        });
+
+        $.ig.RVDashboard.loadDashboard("Sales", (dashboard) => {
+            revealView.dashboard = dashboard;
+            revealView.onSave = (rv, args) => {
+                if (args.saveAs) {
+                    var newName = prompt("ダッシュボード名を入力してください");
+                    isDuplicateName(newName).then(isDuplicate => {
+                        if (isDuplicate === "true") {
+                            if (!window.confirm(newName + " という名前のダッシュボードは既に存在しています。上書きしますか？")) {
+                                return;
+                            }
+                        }
+                        args.dashboardId = args.name = newName;
+                        args.saveFinished();
+                    });
+                }
+                else {
+                    args.saveFinished();
+                }
+            };
+        });
+        function isDuplicateName(name) {
+            return fetch(`http://localhost:5111/isduplicatename/${name}`).then(resp => resp.text());
+        }
+    </script>
+</body>
+
+</html>
